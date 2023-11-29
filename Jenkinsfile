@@ -2,64 +2,60 @@ pipeline {
     agent any
         
         stages {
-        stage('Git checkout') {
-            steps{
-                // Get source code from a GitHub repository
-                git branch:'grace', credentialsId:'SSH-key', url:'git@github.com:Grace-Si/GoExpertsFrontend.git'
+            stage('Git checkout') {
+                steps{
+                    // Get source code from a GitHub repository
+                    git branch:'grace', credentialsId:'SSH-key', url:'git@github.com:Grace-Si/GoExpertsFrontend.git'
+                }
             }
-        }
-        stage('Setup') {
-            environment {
-                nodeVersion = '12.18.4' // Specify the desired Node.js version
+            stage('Setup') {
+                environment {
+                    nodeVersion = '12.18.4' // Specify the desired Node.js version
+                }
+                steps {
+                    script {
+                        // Install Node.js using NVM
+                        sh 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash' // Install NVM
+                        sh "export NVM_DIR=\"\$HOME/.nvm\"" // Set NVM directory
+                        sh "[ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\"" // Load NVM script
+                        sh "nvm install ${env.nodeVersion}" // Install specific Node.js version
+                        sh "nvm use ${env.nodeVersion}" // Use the installed Node.js version
+                    }
+                }
             }
-            steps {
-                script {
-                    // Download and set up Node.js in the pipeline workspace
-                    tool name: 'node', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation', 
-                         label: '', // If applicable, specify a label where NodeJS tool is configured
-                         command: "install ${env.nodeVersion}"
+            stage('Install') {
+                steps{
+                    dir("./") {
+                        sh 'npm install'
+                    }
+                }
+            }
 
-                    // Use the downloaded Node.js in the pipeline
-                    def nodeHome = tool name: 'node', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
-                    env.PATH = "${nodeHome}/bin:${env.PATH}"
-                    sh 'node --version' // Verify Node.js version
+            stage('Test') {
+                steps{
+                    dir("./") {
+                        sh 'echo "test"'
+                    }
                 }
             }
-        }
-        stage('Install') {
-            steps{
-                dir("./") {
-                    sh 'npm install'
-                }
-            }
-        }
 
-        stage('Test') {
-            steps{
-                dir("./") {
-                    sh 'echo "test"'
+            stage('Build') {
+                steps{
+                    dir("./") {
+                        sh 'npm run build'
+                    }
                 }
             }
-        }
-
-        stage('Build') {
-            steps{
-                dir("./") {
-                    sh 'npm run build'
-                }
-            }
-        }
-      
-        stage('Upload') {
-            steps {
-                dir("./") {
-                    withAWS (region:"ap-southeast-2", credentials:"AWS-Credential") {
-                    s3Delete(bucket: 'goexpertsfe', path:'**/*')
-                    s3Upload(bucket: 'goexpertsfe', workingDir:'build', includePathPattern:'**/*');
+        
+            stage('Upload') {
+                steps {
+                    dir("./") {
+                        withAWS (region:"ap-southeast-2", credentials:"AWS-Credential") {
+                        s3Delete(bucket: 'goexpertsfe', path:'**/*')
+                        s3Upload(bucket: 'goexpertsfe', workingDir:'build', includePathPattern:'**/*');
+                        }
                     }
                 }
             }
         }
-
-    }
 }
