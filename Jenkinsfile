@@ -24,7 +24,7 @@ pipeline {
             stage('Test') {
                 steps{
                     dir("./") {
-                        sh 'echo "test"'
+                        echo "test"
                     }
                 }
             }
@@ -39,13 +39,18 @@ pipeline {
         
             stage('Upload') {
                 steps {
-                    dir("./") {
-                        withAWS (region:"ap-southeast-2", credentials:"AWS-Credential") {
-                        s3Delete(bucket: 'goexpertsfe', path:'**/*')
-                        s3Upload(bucket: 'goexpertsfe', workingDir:'build', includePathPattern:'**/*');
-                        }
-                    }
-                }
+                    script {
+                        withAWS(region: 'ap-southeast-2', credentials: 'AWS-Credential') {
+                            def s3UploadParams = [
+                                bucket: 'goexpertsfe',
+                                workingDir: 'build',
+                                includePathPattern: '**/*'
+                            ]
+                            s3Upload s3UploadParams
             }
+        }
+    }
+}
+
         }
 }
