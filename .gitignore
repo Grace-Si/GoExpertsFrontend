@@ -48,3 +48,14 @@ Thumbs.db
 *.flv
 *.mov
 *.wmv
+
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Exclude all .tfvars, which can likely to contain sesitive data, such as password, private keys and other secrets.
+*.tfvars
+*.tfvars.json
